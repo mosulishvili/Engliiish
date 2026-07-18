@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>სიტყვების რითმების გენერატორი</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { max-width: 100%; width: 100%; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 95vh; }
+        h1 { text-align: center; color: #333; margin: 0 0 15px 0; font-size: 1.5em; }
+        .search-box { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        .font-control-group { display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 10px 20px; border-radius: 8px; border: 2px solid #007bff; }
+        .font-control-group label { font-size: 14px; color: #495057; font-weight: bold; }
+        .font-btn { padding: 8px 15px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; width: auto; min-width: 40px; font-weight: bold; }
+        .font-btn:hover { background: #0056b3; }
+        .font-size-display { font-size: 16px; color: #dc3545; font-weight: bold; min-width: 50px; text-align: center; background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #dee2e6; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        button { padding: 15px 40px; font-size: 18px; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s; width: 200px; }
+        button:hover { background-color: #218838; }
+        .speak-all-btn { background-color: #6f42c1; }
+        .speak-all-btn:hover { background-color: #5a32a3; }
+        .speak-all-btn:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+        .ios-fix-btn { background: #fd7e14; }
+        .ios-fix-btn:hover { background: #e56b0a; }
+        input { padding: 12px 15px; font-size: 16px; border: 2px solid #ddd; border-radius: 6px; outline: none; transition: border-color 0.3s; width: 300px; text-align: center; }
+        input:focus { border-color: #007bff; }
+        .results { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .variant-section { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+        .variant-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #e9ecef; cursor: pointer; transition: background 0.3s; user-select: none; flex-shrink: 0; }
+        .variant-header:hover { background: #dee2e6; }
+        .variant-header.active { background: #007bff; color: white; }
+        .variant-header.active h3 { color: white; }
+        .variant-header h3 { margin: 0; color: #495057; font-size: 1.1em; }
+        .toggle-icon { font-size: 18px; transition: transform 0.3s; }
+        .toggle-icon.collapsed { transform: rotate(-90deg); }
+        .variant-content { max-height: 2000px; overflow-y: auto; transition: max-height 0.5s ease-out, padding 0.3s ease; padding: 10px 15px; }
+        .variant-content.collapsed { max-height: 0; padding: 0 15px; overflow: hidden; }
+        ol { padding-left: 25px; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; }
+        @media (max-width: 600px) { ol { grid-template-columns: 1fr; } input { width: 200px; } button { width: 180px; } }
+        li { margin-bottom: 6px; color: #333; font-size: 1.1em; line-height: 1.4; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s; user-select: none; -webkit-tap-highlight-color: rgba(0,123,255,0.2); }
+        li:hover { background: #e7f3ff; }
+        li:active { background: #cce5ff; }
+        li.speaking { background: #fff3cd !important; animation: pulse 0.5s ease-in-out infinite alternate; }
+        @keyframes pulse { from { background: #fff3cd; } to { background: #ffeaa7; } }
+        .georgian-phonetic { font-size: 0.9em; color: #6c757d; margin-left: 8px; }
+        .georgian-phonetic::before { content: '('; }
+        .georgian-phonetic::after { content: ')'; }
+        .ending-info { text-align: center; color: #007bff; font-weight: bold; padding: 10px; background: #e7f3ff; border-radius: 6px; margin-bottom: 10px; }
+        .speaker-icon { font-size: 0.8em; margin-right: 6px; opacity: 0.5; }
+        li:hover .speaker-icon { opacity: 1; }
+        .audio-hint { text-align: center; color: #6c757d; font-size: 13px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>სიტყვების რითმების გენერატორი</h1>
+    <div class="search-box">
+        <div class="font-control-group">
+            <label>ასოების ზომა:</label>
+            <button class="font-btn" onclick="changeFontSize(-0.2)">−</button>
+            <span class="font-size-display" id="font-size-display">1.1</span>
+            <button class="font-btn" onclick="changeFontSize(0.2)">+</button>
+        </div>
+        <div class="btn-group">
+            <button onclick="generateWords()">გენერირება</button>
+            <button class="speak-all-btn" id="speak-all-btn" onclick="speakAllWords()" disabled>🔊 ყველას მოსმენა</button>
+            <button class="ios-fix-btn" id="ios-fix-btn" onclick="initAudio()">🔊 ხმის ჩართვა</button>
+        </div>
+        <input type="text" id="wordInput" placeholder="ჩაწერე სიტყვა (მაგ: mountain, hello, world)..." onkeypress="if(event.key === 'Enter') generateWords()">
+        <div class="audio-hint" id="audio-hint">💡 სიტყვაზე დაჭერით მოისმენთ ინგლისურ წარმოთქმას</div>
+    </div>
+    <div class="results">
+        <div id="ending-info" class="ending-info" style="display:none;"></div>
+        <div class="variant-section" id="variant1-section">
+            <div class="variant-header active" onclick="toggleVariant('variant1')">
+                <h3>ვარიანტი 1: ინგლისური + ქართული ფონეტიკური</h3>
+                <span class="toggle-icon" id="variant1-icon">▼</span>
+            </div>
+            <div class="variant-content" id="variant1-content">
+                <ol id="variant1"></ol>
+            </div>
+        </div>
+        <div class="variant-section" id="variant2-section">
+            <div class="variant-header" onclick="toggleVariant('variant2')">
+                <h3>ვარიანტი 2: მხოლოდ ინგლისური</h3>
+                <span class="toggle-icon collapsed" id="variant2-icon">▶</span>
+            </div>
+            <div class="variant-content collapsed" id="variant2-content">
+                <ol id="variant2"></ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const rhymeDB = {
+    tion:"Action,Fiction,Section,Option,Mission,Vision,Passion,Fashion,Nation,Station,Vacation,Creation,Relation,Location,Duration,Rotation,Donation,Inflation,Education,Situation,Information,Operation,Generation,Celebration,Preparation,Motivation,Graduation,Application,Conversation,Organization,Production,Reduction,Collection,Connection,Direction,Protection,Selection,Reflection,Correction,Injection,Attention,Invention,Prevention,Mention,Tension,Extension,Dimension,Session,Impression,Expression",
+    sion:"Division,Decision,Occasion,Invasion,Persuasion,Explosion,Collision,Allusion,Illusion,Conclusion,Confusion,Fusion,Diffusion,Infusion,Profusion,Seclusion,Exclusion,Inclusion,Delusion,Elusion,Collusion,Intrusion,Obtrusion,Abrasion,Evasion,Retention,Contention,Distention,Detention,Apprehension,Comprehension,Suspension,Pension,Mansion,Expansion",
+    ing:"King,Ring,Sing,Wing,Spring,String,Bring,Swing,Thing,Sting,Morning,Evening,Running,Jumping,Singing,Dancing,Walking,Talking,Working,Playing,Reading,Writing,Driving,Swimming,Climbing,Fighting,Lighting,Waiting,Watching,Looking,Feeling,Healing,Stealing,Dealing,Wheeling,Kneeling,Peeling,Reeling,Sealing,Building,Killing,Filling,Spilling,Drilling,Grilling,Willing,Chilling,Shilling,Billing",
+    ings:"Rings,Wings,Kings,Springs,Strings,Brings,Flings,Slings,Clings,Swings,Things,Findings,Sayings,Playings,Readings,Writings,Evenings,Mornings,Feelings,Meetings,Settings,Elements,Movements,Requirements,Comments",
+    uns:"Suns,Guns,Nuns,Puns,Runs,Stuns,Shuns,Buns,Ones,Tons,Sons,Fans,Plans,Vans,Mans,Scans,Bans,Kans,Spans,Clans,Done,Won,None,Run,Sun,Gun,Fun,Bun,Nun,Pun,Under,Thunder,Wonder,Plunder,Blunder,Hunter,Runner,Gunner,Stunner,Summer,Number,Slumber,Begun,Outrun,Overrun,Rerun,Anyone,Someone,Everyone,Outdone",
+    ay:"Day,Way,Say,Play,Stay,May,Pay,Lay,Ray,Bay,Gray,Clay,Tray,Pray,Spray,Stray,Delay,Relay,Display,Array,Okay,Birthday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday,Holiday,Yesterday,Today,Gateway,Highway,Subway,Runway,Driveway,Pathway,Doorway,Stairway,Always,Anyway,Railway,Motorway,Freeway,Causeway,Archway,Breezeway,Walkway,Hallway",
+    ee:"Tree,Free,See,Bee,Knee,Fee,Gee,Pee,Tee,Wee,Three,Agree,Degree,Decree,Guarantee,Referee,Committee,Employee,Trainee,Absentee,Nominee,Devotee,Retiree,Escapee,Addressee,Interviewee,Trustee,Jubilee,Spree,Coffee,Toffee,Genie,Movie,Cookie,Brownie,Hoodie,Goodie,Foodie,Yuppie,Preppie,Bookie,Rookie",
+    ow:"Show,Know,Grow,Flow,Blow,Slow,Snow,Glow,Throw,Crow,Below,Shadow,Meadow,Window,Rainbow,Pillow,Willow,Billow,Follow,Hollow,Swallow,Wallow,Shallow,Mallow,Sallow,Tallow,Fallow,Hallow,Callow,Marrow,Tomorrow,Sorrow,Borrow,Morrow,Coco,Jumbo,Bamboo,Taboo,Igloo,Undertow,Overflow,Foreshadow,Afterglow,Outflow,Inflow,Crossbow,Longbow,Elbow",
+    er:"Better,Letter,Weather,Feather,Leather,Together,Forever,Never,Ever,Clever,Driver,River,Deliver,Consider,Remember,December,Member,November,Chamber,Amber,Number,Slumber,Lumber,Plumber,Cucumber,Encumber,Outnumber,Computer,Commuter,Distributor,Contributor,Persecutor,Prosecutor,Executor,Monitor,Doctor,Professor,Conductor,Instructor,Constructor,Destroyer,Employer,Lawyer,Sawyer,Player,Prayer,Slayer,Layer",
+    ly:"Only,Lonely,Lovely,Likely,Unlikely,Highly,Lowly,Slowly,Quickly,Weekly,Daily,Monthly,Yearly,Hourly,Timely,Untimely,Costly,Friendly,Unfriendly,Deadly,Lively,Ugly,Homely,Comely,Seemly,Unseemly,Extremely,Supremely,Absolutely,Relatively,Positively,Negatively,Actively,Passively,Massively,Aggressively,Impressively,Obsessively,Happily,Sadly,Madly,Badly,Gladly,Steadily,Readily,Willingly,Unwillingly,Truly,Duly",
+    ness:"Happiness,Sadness,Madness,Gladness,Badness,Goodness,Kindness,Blindness,Mindfulness,Mindlessness,Darkness,Lightness,Brightness,Tightness,Rightness,Wrongness,Strongness,Weakness,Meekness,Slickness,Fitness,Witness,Fondness,Soundness,Roundness,Awareness,Carelessness,Fearlessness,Hopelessness,Homelessness,Restlessness,Effortlessness,Timelessness,Limitlessness,Endlessness,Silliness,Hilliness,Chilliness,Williness,Skillfulness,Playfulness,Youthfulness,Truthfulness,Doubtfulness,Thoughtfulness",
+    ment:"Moment,Movement,Improvement,Achievement,Agreement,Employment,Unemployment,Development,Environment,Government,Management,Entertainment,Investment,Involvement,Establishment,Commitment,Equipment,Fragment,Segment,Pigment,Figment,Alignment,Assignment,Consignment",
+    ful:"Beautiful,Wonderful,Powerful,Careful,Helpful,Hopeful,Joyful,Playful,Graceful,Peaceful,Doubtful,Fearful,Cheerful,Tearful,Wishful,Skillful,Willful,Harmful,Shameful,Blameful,Thankful,Thoughtful,Regretful,Respectful,Neglectful,Successful,Unsuccessful,Stressful,Restful,Painful,Gainful,Meaningful,Meaningless,Homeful,Homeless,Hopeful,Hopeless,Careful,Careless,Useful,Useless,Harmful,Harmless,Shameful,Shameless,Fearful,Fearless,Doubtful,Doubtless",
+    less:"Careless,Hopeless,Homeless,Fearless,Doubtless,Endless,Helpless,Restless,Breathless,Wireless,Priceless,Worthless,Harmless,Shameless,Blameless,Nameless,Faceless,Tasteless,Baseless,Groundless,Countless,Boundless,Soundless,Wordless,Speechless,Sleepless,Dreamless,Seamless,Timeless,Spaceless,Limitless,Effortless,Painless,Gainless,Meaningless,Senseless,Defenseless,Offenseless,Purposeless,Aimless,Motionless,Emotionless,Devotionless,Promotionless,Oceanless,Potionless,Motionless,Notionless,Cautionless,Portionless",
+    ation:"Creation,Relation,Location,Duration,Rotation,Donation,Inflation,Education,Situation,Information,Operation,Generation,Celebration,Preparation,Motivation,Graduation,Application,Conversation,Organization,Combination,Examination,Imagination,Immigration,Registration,Reservation,Restoration,Translation,Transportation,Variation,Vaccination,Activation,Affectation,Ammunition,Appreciation,Approbation,Association,Attribution,Authorization,Civilization,Classification,Collaboration,Communication,Compensation,Compilation,Completion,Composition,Concentration,Condemnation,Confirmation,Confrontation",
+    ight:"Light,Night,Right,Sight,Fight,Might,Tight,Bright,Flight,Height,Knight,Plight,Slight,Weight,Freight,Eight,Straight,Delight,Tonight,Fortnight,Daylight,Sunlight,Moonlight,Starlight,Spotlight,Headlight,Taillight,Flashlight,Searchlight,Stoplight,Greenlight,Redlight,Highlights,Limelight,Twilight,Overnight,Midnight",
+    ound:"Sound,Round,Ground,Found,Bound,Wound,Hound,Mound,Pound,Crowned,Around,Surround,Background,Foreground,Playground,Underground,Battleground,Campground,Fairground,Graveyard,Compound,Confound,Astound,Dumbfound,Propound,Expound,Rebound,Inbound,Outbound,Newfound,Unbound,Homebound,Hellbound,Duty-bound,Spellbound,Hidebound,Earthbound,Heaven-bound,Fogbound,Icebound,Merry-go-round,Runaround,Turnaround,Getaround,Comearound,Goaround,Walkaround,Lookaround,Pusharound,Bossaround",
+    est:"Best,Rest,Test,West,Nest,Chest,Guest,Quest,Jest,Zest,Arrest,Digest,Invest,Suggest,Request,Contest,Protest,Manifest,Detest,Molest,Forest,Honest,Modest,Greatest,Latest,Earliest,Fairest,Rarest,Nearest,Dearest,Clearest,Weirdest,Interest,Disinterest,Uninterest,Conquest,Inquest,Bequest",
+    ain:"Main,Pain,Rain,Gain,Chain,Train,Brain,Drain,Grain,Plain,Spain,Strain,Stain,Slain,Twain,Domain,Remain,Contain,Obtain,Retain,Attain,Detain,Sustain,Mundane,Humane,Insane,Profane,Arcane,Cocaine,Champagne,Campaign,Explain,Complain,Refrain,Maintain,Sustain,Ascertain,Certain,Mountain,Fountain,Captain,Chaplain,Villain,Britain,Curtain,Bargain",
+    ane:"Plane,Lane,Jane,Maine,Spain,Crane,Drain,Grain,Plain,Strain,Stain,Twain,Domain,Remain,Contain,Obtain,Retain,Attain,Detain,Sustain,Mundane,Humane,Insane,Profane,Arcane,Cocaine,Champagne,Campaign,Explain,Complain,Refrain,Maintain,Sustain,Ascertain,Certain,Mountain,Fountain,Captain,Chaplain,Villain,Britain,Curtain,Bargain,Hurricane,Methane,Propane,Octane",
+    one:"One,Bone,Cone,Done,Gone,Hone,Lone,None,Phone,Pone,Stone,Tone,Zone,Alone,Atone,Clone,Cyclone,Drone,Flintstone,Grindstone,Hailstone,Headstone,Hearthstone,Keystone,Limestone,Lodestone,Milestone,Millstone,Moonstone,Sandstone,Silestone,Soapstone,Steppingstone,Tombstone,Touchstone,Whetstone,Windblown,Full-blown,Homegrown,Overgrown,Outshone,Well-known,Unknown,Foreknown,Misknown,Renown,Crown,Brown,Town,Down",
+    own:"Own,Known,Shown,Grown,Blown,Flown,Thrown,Clown,Crown,Brown,Town,Down,Drown,Frown,Gown,Unknown,Well-known,Foreknown,Misknown,Renown,Homegrown,Overgrown,Outshone,Windblown,Full-blown",
+    all:"All,Ball,Call,Fall,Hall,Mall,Tall,Wall,Small,Stall,Install,Recall,Football,Basketball,Baseball,Softball,Volleyball,Handball,Fireball,Snowball,Eyeball,Meatball,Cannonball,Curveball,Fastball,Screwball,Gumball,Pinball,Oddball,Goofball,Blackball,Waterfall,Windfall,Nightfall,Freefall,Downfall,Rainfall,Snowfall,Footfall,Pitfall,Pratfall,Shortfall,Landfall,Catcall,Rollcall,Portcall",
+    ould:"Could,Would,Should,Mould,Fold,Gold,Hold,Bold,Cold,Sold,Told,Old,Scold,Threshold,Behold,Uphold,Withhold,Foretold,Untold,Twofold,Threefold,Fourfold,Fivefold,Sixfold,Sevenfold,Eightfold,Ninefold,Tenfold,Hundredfold,Manifold,Blindfold,Centerfold,Gatefold,Fanfold,Scaffold,Mangold,Marigold",
+    old:"Old,Cold,Bold,Fold,Gold,Hold,Mold,Sold,Told,Scold,Threshold,Behold,Uphold,Withhold,Foretold,Untold,Twofold,Threefold,Fourfold,Fivefold,Sixfold,Sevenfold,Eightfold,Ninefold,Tenfold,Hundredfold,Manifold,Blindfold,Centerfold,Gatefold,Fanfold,Scaffold,Mangold,Marigold,Could,Would,Should",
+    and:"And,Band,Brand,Grand,Hand,Land,Sand,Stand,Command,Demand,Expand,Grandstand,Handstand,Headband,Husband,Wristband,Armband,Backband,Neckband,Waistband,Hatband,Rubberband,Hairband,Meadowland,Wonderland,Dreamland,Neverland,Fairyland,Graceland,Ireland,Scotland,Thailand,Finland,Greenland,Swaziland,Switzerland,Netherland,Poland,Portland,Cleveland,Oakland,Ashland,Grassland,Marshland,Wetland,Woodland,Highland,Lowland,Mainland",
+    end:"End,Bend,Blend,Fend,Lend,Mend,Send,Spend,Tend,Trend,Wend,Append,Attend,Contend,Defend,Depend,Descend,Extend,Intend,Offend,Pretend,Suspend,Transcend,Amend,Commend,Recommend,Legend,Weekend,Boyfriend,Girlfriend",
+    ind:"Find,Kind,Mind,Bind,Grind,Blind,Wind,Behind,Remind,Rewind,Unwind,Unkind,Mankind,Humankind,Womankind,Colorblind,Snowblind,Starblind,Loveblind,Stoneblind,Sandblind,Purblind",
+    ant:"Want,Cant,Plant,Grant,Slant,Rant,Chant,Enchant,Recant,Decant,Vacant,Pregnant,Flagrant,Fragrant,Vagrant,Migrant,Emigrant,Immigrant,Important,Distant,Instant,Assistant,Resistant,Consistent,Persistent,Insistent",
+    ent:"Went,Sent,Spent,Bent,Cent,Dent,Lent,Rent,Tent,Vent,Event,Prevent,Invent,Consent,Dissent,Present,Absent,Represent,Content,Intent,Extent,Patent,Latent,Potent,Omnipotent,Impotent,Competent,Incompetent,Persistent,Consistent,Insistent,Resistant,Assistant",
+    art:"Art,Cart,Chart,Dart,Heart,Mart,Part,Smart,Start,Apart,Depart,Impart,Counterpart,Mouthpart,Bodypart,Sparepart,Workofart,Stateoftheart,Popart,Streetart,Fineart,Darkart,Blackart",
+    irt:"Dirt,Hurt,Shirt,Skirt,Flirt,Alert,Convert,Desert,Divert,Insert,Invert,Overt,Revert,Subvert,Avert,Advert,Concert,Expert,Comfort,Effort,Report,Support,Transport,Resort,Short,Sort,Court,Port,Fort,Mort,Abort,Exhort,Distort,Extort,Retort,Contort,Tort,Quart,Cart,Dart,Heart,Mart,Part,Smart,Start,Apart,Depart,Impart,Counterpart,Mouthpart,Bodypart",
+    ort:"Sort,Short,Court,Port,Fort,Mort,Abort,Exhort,Distort,Extort,Retort,Contort,Tort,Quart,Cart,Dart,Heart,Mart,Part,Smart,Start,Apart,Depart,Impart,Counterpart,Mouthpart,Bodypart,Sparepart,Workofart,Stateoftheart,Popart,Streetart,Fineart,Darkart,Blackart,Dirt,Hurt,Shirt,Skirt,Flirt,Alert,Convert,Desert,Divert,Insert,Invert,Overt,Revert,Subvert,Avert",
+    urt:"Hurt,Shirt,Skirt,Flirt,Alert,Convert,Desert,Divert,Insert,Invert,Overt,Revert,Subvert,Avert,Advert,Concert,Expert,Comfort,Effort,Report,Support,Transport,Resort,Short,Sort,Court,Port,Fort,Mort,Abort,Exhort,Distort,Extort,Retort,Contort,Tort,Quart,Cart,Dart,Heart,Mart,Part,Smart,Start,Apart,Depart,Impart,Counterpart,Mouthpart,Bodypart,Sparepart",
+    ast:"Fast,Last,Past,Vast,Blast,Cast,Contrast,Broadcast,Downcast,Outcast,Overcast,Podcast,Simulcast,Telecast,Typecast,Forecast,Newscast,Recast",
+    ust:"Just,Trust,Rust,Bust,Dust,Gust,Lust,Must,Thrust,Crust,Adjust,Disgust,Distrust,Entrust,Mistrust,Antitrust,Nonprofit,Profit,Deficit,Benefit,Counterfeit,Forfeit,Surfeit,Banquet,Claret,Gadget,Magnet,Puppet,Rivet,Bucket,Pocket,Rocket,Socket,Ticket,Wicket,Cricket,Thicket,Bracket,Jacket,Packet,Racket",
+    oot:"Boot,Foot,Hoot,Loot,Root,Shoot,Toot,Coot,Moot,Scoot,Bigfoot,Blackfoot,Clubfoot,Flatfoot,Hotfoot,Webfoot,Underfoot,Barefoot,Crowfoot,Afoot",
+    out:"Out,About,Shout,Doubt,Scout,Sprout,Spout,Stout,Trout,Throughout,Without,Breakout,Takeout,Makeout,Shakeout,Handout,Standout,Hangout,Freakout,Checkout,Blackout,Backout,Stackout,Trackout",
+    ice:"Ice,Nice,Rice,Price,Slice,Dice,Mice,Lice,Twice,Thrice,Advice,Device,Service,Practice,Malpractice,Cowardice,Edifice,Artifice,Benefice,Malefice,Avarice",
+    ace:"Ace,Base,Case,Face,Grace,Place,Race,Space,Trace,Chase,Disgrace,Embrace,Replace,Misplace,Outpace,Showcase,Staircase,Suitcase,Bookcase,Briefcase,Nutcase,Crackcase,Glasscase,Displaycase,Lowercase,Uppercase",
+    uce:"Use,Abuse,Accuse,Amuse,Confuse,Diffuse,Excuse,Infuse,Misuse,Peruse,Refuse,Reuse,Suffuse,Transfuse,Disabuse,Overuse,Underuse,Carouse,Douse,Grouse,House,Louse,Mouse,Spouse,Blouse",
+    ake:"Make,Bake,Cake,Fake,Lake,Rake,Sake,Take,Wake,Brake,Break,Mistake,Outbreak,Heartbreak,Homesick,Seasick,Carsick,Airsick,Lovesick",
+    ase:"Base,Case,Face,Grace,Place,Race,Space,Trace,Chase,Disgrace,Embrace,Replace,Misplace,Outpace,Showcase,Staircase,Suitcase,Bookcase,Briefcase,Nutcase,Crackcase,Glasscase,Displaycase,Lowercase,Uppercase",
+    aze:"Gaze,Blaze,Craze,Daze,Faze,Glaze,Graze,Haze,Laze,Maze,Amaze",
+    ize:"Size,Wise,Rise,Prize,Surprise,Enterprise,Compromise,Exercise,Advertise,Advise,Apologize,Authorize,Civilize,Colonize,Customize,Democratize,Dramatize,Economize,Energize,Equalize,Finalize,Generalize,Globalize,Harmonize,Hospitalize,Humanize,Idealize,Immobilize,Individualize,Industrialize,Initialize,Legalize,Lionize,Magnetize,Maximize,Mechanize,Memorize,Minimize,Modernize,Monopolize,Moralize,Nationalize,Naturalize,Neutralize,Normalize,Optimize,Organize,Patronize,Personalize,Polarize",
+    ose:"Close,Chose,Dose,Ghost,Gross,Host,Most,Post,Roost,Boost,Roast,Toast,Coast,Boast",
+    use:"Use,Abuse,Accuse,Amuse,Confuse,Diffuse,Excuse,Infuse,Misuse,Peruse,Refuse,Reuse,Suffuse,Transfuse,Disabuse,Overuse,Underuse,Carouse,Douse,Grouse,House,Louse,Mouse,Spouse,Blouse",
+    ove:"Love,Above,Dove,Glove,Shove,Drove,Groove,Move,Prove,Remove,Approve,Disprove,Improve,Reprove,Behove,Grove,Trove,Stove",
+    ive:"Live,Give,Five,Drive,Dive,Hive,Jive,Alive,Arrive,Connive,Contrive,Deprive,Derive,Revive,Survive,Thrive,Achieve,Believe,Grieve,Heave,Leave,Weave,Receive,Perceive,Deceive,Relieve,Retrieve,Reprieve,Conceive,Misgive,Forgive,Outlive,Relive,Archive,Massive,Passive,Aggressive,Impressive,Obsessive,Excessive,Successive,Progressive,Regressive,Expressive",
+    ure:"Sure,Pure,Cure,Endure,Ensure,Immature,Imposture,Indenture,Jointure,Lecture,Manufacture,Mixture,Moisture,Nature,Nurture,Obscure,Overture,Pasture,Picture,Pleasure,Posture,Premature,Pressure,Procedure,Puncture,Rapture,Rupture,Sculpture,Seizure,Signature,Stature,Structure,Temperature,Texture,Torture,Treasure,Venture,Vulture,Adventure,Agriculture,Architecture,Caricature,Censure,Closure,Composure,Conjecture,Culture,Creature,Curvature,Debenture",
+    ore:"More,Bore,Core,Fore,Gore,Lore,Pore,Sore,Store,Tore,Wore,Yore,Adore,Before,Deplore,Explore,Implore,Restore,Ashore,Offshore,Onshore,Seashore,Underscore,Carnivore,Herbivore,Omnivore,Insectivore,Folivore,Frugivore,Granivore,Piscivore,Sanguivore,Mucivore,Xylophage,Zoophage,Bacterivore,Detritivore,Geophage,Coprophage,Necrophage,Oophage,Planktivore,Spongivore,Molluscivore,Lepidophage,Myrmecophage,Termitivore,Formivore,Avivore,Ophiophage",
+    are:"Care,Dare,Fare,Hare,Mare,Rare,Ware,Bare,Aware,Beware,Compare,Declare,Prepare,Repair,Share,Spare,Square,Stare,There,Where,Hardware,Software,Fanfare,Welfare,Warfare,Healthcare,Medicare",
+    ire:"Fire,Hire,Wire,Tire,Dire,Mire,Sire,Vire,Admire,Acquire,Desire,Expire,Inspire,Require,Retire,Aspire,Conspire,Empire,Umpire,Satire,Crossfire,Bonfire,Gunfire,Campfire,Wildfire,Backfire,Spitfire,Hangfire,Rapidfire,Ceasefire,Friendlyfire,Openfire,Underfire,Catchfire,Onfire,Setfire",
+    ell:"Bell,Cell,Dell,Fell,Hell,Sell,Tell,Well,Yell,Spell,Farewell,Hello,Jell,Kell,Mell,Nell,Pell,Quell,Rell",
+    ill:"Bill,Fill,Hill,Kill,Mill,Pill,Still,Till,Will,Chill,Drill,Frill,Grill,Quill,Shrill,Skill,Spill,Swill,Thrill,Trill,Distill,Instill,Overfill,Refill,Bluegill,Daffodil",
+    oll:"Roll,Poll,Doll,Toll,Stroll,Control,Enroll,Extol,Patrol,Console,Parole,Bankroll,Bedroll,Casserole,Eggroll,Payroll,Pole,Role,Scroll,Troll",
+    ull:"Full,Bull,Pull,Dull,Gull,Hull,Lull,Mull,Null,Cull,Skull,Overfull,Bountiful,Beautiful,Dutiful,Fruitful,Grateful,Hateful,Healthful,Helpful,Hopeful,Joyful,Mouthful,Plentiful,Powerful,Prideful,Regretful,Remorseful,Resentful,Respectful,Restful,Rightful,Shameful,Sinful,Skillful,Sorrowful,Soulful,Spiteful,Successful,Tactful,Tasteful,Thoughtful,Truthful,Useful,Watchful,Willful,Wishful,Wonderful,Wrathful,Youthful",
+    ick:"Kick,Lick,Pick,Sick,Tick,Wick,Brick,Chick,Click,Cricket,Flick",
+    ack:"Back,Black,Crack,Hack,Jack,Lack,Pack,Quack,Rack,Sack,Shack,Slack,Smack,Snack,Stack,Tack,Track,Whack,Attack,Backpack,Feedback,Flashback,Halfback,Hatchback,Humpback,Kickback,Laid-back",
+    eck:"Check,Deck,Neck,Peck,Wreck,Beck,Fleck,Heck,Keck,Leck,Meck",
+    ock:"Lock,Block,Clock,Dock,Flock,Knock,Rock,Shock,Sock,Stock",
+    uck:"Luck,Buck,Duck,Truck,Stuck,Struck,Cluck,Pluck,Shuck,Snuck,Chuck",
+    unk:"Funk,Bunk,Chunk,Clunk,Drunk,Dunk,Flunk,Gunk,Hunk,Junk,Lunk,Monk,Plunk,Punk,Skunk,Slunk,Spunk,Stunk,Sunk,Trunk",
+    ank:"Bank,Blank,Crank,Drank,Flank,Frank,Hank,Plank,Prank,Rank,Sank,Shank,Skank,Slank,Spank,Stank,Swank,Tank,Thank,Yank,Outflank,Outrank,Overrank,Underbank,Overbank,Riverbank,Sandbank,Snowbank",
+    ink:"Think,Blink,Brink,Chink,Clink,Drink,Fink,Link,Pink,Shrink,Sink,Stink,Wink,Inc,Zinc,Mink,Rink,Skink,Slink,Swink,Twink,Vink,Outthink,Overthink,Rethink,Forethink,Methink,Unthink,Doublethink,Groupthink",
+    ong:"Long,Song,Wrong,Strong,Along,Among,Belong,Prolong,Lifelong,Yearlong,Daylong,All along,Get along,Go along,Play along,Run along,Sing along,String along,Tag along,Come along,Bring along,Take along,Walk along,Ride along,Drive along,Fly along,Sail along,Move along,Pass along,Send along,Hand along",
+    ung:"Sung,Dung,Hung,Lung,Rung,Stung,Sung,Clung,Flung,Slung,Sprung,Strung,Swung,Wrung,Young,Among,Tongue,Lounge,Sponge,Expunge,Impugn,Repugn",
+    ang:"Bang,Clang,Dang,Fang,Gang,Hang,Pang,Rang,Sang,Tang,Wang,Yang,Zang,Boomerang,Ginseng,Harangue,Meringue,Overhang,Slang,Sprang,Strang,Twang",
+    eet:"Feet,Beet,Meet,Sheet,Street,Sweet,Fleet,Greet,Sleet,Tweet,Bittersweet,Clubfeet,Flatfeet,Forefeet,Webfeet,Athlete,Compete,Complete,Delete,Deplete,Discrete,Excrete",
+    eat:"Eat,Beat,Cheat,Feat,Heat,Meat,Neat,Seat,Treat,Wheat,Bleat,Cheat,Cleat,Great,Pleat,Skeat,Sweat,Threat,Treat,Upbeat,Downbeat,Offbeat,Heartbeat,Backseat,Box seat,Front seat,Hot seat,Judgeseat,Rumpleseat,Windowseat,Car seat,Baby seat,Booster seat,Bucket seat,Jump seat,Love seat,Passenger seat,Rear seat",
+    ean:"Mean,Bean,Clean,Dean,Jean,Lean,Wean,Glean,Ocean,Potion,Motion,Notion,Between,Canteen",
+    eep:"Deep,Keep,Peep,Sleep,Sweep,Weep,Creep,Sheep,Steep,Cheap,Asleep,Beep,Bleep,Cheat,Heap,Jeep,Leap,Neep,Reap,Seep,Teep,Veep,Upkeep",
+    eel:"Feel,Heel,Keel,Peel,Reel,Steel,Wheel,Cocktail,Email,Female,Male,Retail,Wholesale,Airmail,Blackmail,Chainmail,Jail,Nail,Rail,Sail,Tail,Fail,Hail,Mail,Pail,Quail,Snail,Trail,Detail,Entail,Prevail",
+    eem:"Seem,Deem,Teem,Ream,Beam,Cream,Dream,Gleam,Scream,Stream,Team,Steam,Seam",
+    een:"Seen,Been,Green,Keen,Queen,Screen,Teen,Between,Canteen",
+    eam:"Team,Beam,Cream,Dream,Gleam,Scream,Stream,Steam,Seam",
+    ear:"Ear,Bear,Dear,Fear,Gear,Hear,Near,Pear,Rear,Sear,Tear,Wear,Year,Clear,Shear,Smear,Spear,Steer,Cheer,Deer,Leer,Peer,Seer,Sneer,Steer,Beer,Career,Cashier,Cheer,Commandeer,Disappear,Domineer,Electioneer,Engineer,Filibuster,Frontier,Gazetteer,Insincere,Interfere,Musketeer,Mutineer,Overhear,Pamphleteer,Pioneer,Profiteer,Racketeer,Reappear,Seersucker,Sincere,Summiteer",
+    ead:"Dead,Head,Lead,Read,Bread,Dread,Spread,Thread,Tread,Ahead,Behead,Embed,Infrared,Misled,Overhead,Shred,Sled,Shed,Wed,Fed,Led,Med,Ned,Ped,Red,Sed,Ted,Zed,Bed,Fled,Shed,Sled,Sped,Stead,Swed",
+    eed:"Need,Feed,Seed,Weed,Breed,Creed,Deed,Greed,Heed,Meed,Pleed,Reed,Sneed,Steed,Tweed,Agreed,Concede,Exceed,Impede,Intercede,Misdeed,Precede,Proceed,Recede,Secede,Succeed,Supersede,Antecede,Autofeed,Backfeed,Breastfeed,Force-feed,Handfeed,Overfeed,Self-feed,Spoonfeed,Underfeed,Upfeed,Bottlefeed",
+    ook:"Book,Cook,Hook,Look,Nook,Rook,Took,Brook,Crook,Shook,Snook,Spook,Stook,Chinook,Guidebook,Handbook",
+    ood:"Good,Food,Mood,Wood,Blood,Flood,Brood,Cloud,Crowd,Loud,Proud,Shroud,Soud,Stood,Understood,Withstood,Falsehood,Likelihood,Livelihood,Manhood,Neighborhood,Parenthood,Priesthood,Statehood,Widowhood,Babyhood,Boyhood,Brotherhood,Childhood,Fatherhood,Girlhood,Knighthood,Motherhood,Nationhood,Sisterhood,Adulthood,Bachelorhood,Creaturehood,Falsehood,Hardihood",
+    oon:"Moon,Soon,Noon,Spoon,Boon,Coon,Goon,Loon,Poon,Toon,Balloon,Bassoon,Buffoon,Cartoon,Cocoon,Commune,Dragoon,Festoon,Gadzook,Harpoon,Lampoon,Macaroon,Maroon,Monsoon,Picayune,Platoon,Pontoon,Racoon,Saloon,Sassoon,Swoon,Tycoon,Typhoon,Walloon,Afternoon,Baboon",
+    oop:"Loop,Coop,Hoop,Poop,Scoop,Sloop,Soup,Stoop,Troop,Whoop,Droop,Group,Recoup,Croup",
+    oom:"Room,Boom,Doom,Gloom,Loom,Zoom,Blossom,Bottom,Custom,Fathom,Phantom,Random,Seldom,Symptom,Wholesome,Awesome,Handsome,Lonesome,Quarrelsome,Tiresome,Wearisome,Wholesome,Burdensome,Cumbersome,Fearsome,Flavorsome,Fulsome,Gruesome,Handsome,Loathsome,Meddlesome,Nettlesome,Quarrelsome,Troublesome,Wearisome",
+    ool:"Tool,Cool,Fool,Pool,School,Drool,Ghoul,Mule,Rule,Yule,Cruel,Dual,Fuel,Jewel,Renewal,Approval,Arrival,Denial,Removal,Retrieval,Survival,Upheaval,Bestowal,Betrayal,Concealment",
+    ood:"Good,Food,Mood,Wood,Blood,Flood,Brood,Cloud,Crowd,Loud,Proud,Shroud,Soud,Stood,Understood,Withstood,Falsehood,Likelihood,Livelihood,Manhood,Neighborhood,Parenthood,Priesthood,Statehood,Widowhood,Babyhood,Boyhood,Brotherhood,Childhood,Fatherhood,Girlhood,Knighthood,Motherhood,Nationhood,Sisterhood,Adulthood,Bachelorhood,Creaturehood,Falsehood,Hardihood",
+    oon:"Moon,Soon,Noon,Spoon,Boon,Coon,Goon,Loon,Poon,Toon,Balloon,Bassoon,Buffoon,Cartoon,Cocoon,Commune,Dragoon,Festoon,Gadzook,Harpoon,Lampoon,Macaroon,Maroon,Monsoon,Picayune,Platoon,Pontoon,Racoon,Saloon,Sassoon,Swoon,Tycoon,Typhoon,Walloon,Afternoon,Baboon",
+    oop:"Loop,Coop,Hoop,Poop,Scoop,Sloop,Soup,Stoop,Troop,Whoop,Droop,Group,Recoup,Croup",
+    oom:"Room,Boom,Doom,Gloom,Loom,Zoom,Blossom,Bottom,Custom,Fathom,Phantom,Random,Seldom,Symptom,Wholesome,Awesome,Handsome,Lonesome,Quarrelsome,Tiresome,Wearisome,Wholesome,Burdensome,Cumbersome,Fearsome,Flavorsome,Fulsome,Gruesome,Handsome,Loathsome,Meddlesome,Nettlesome,Quarrelsome,Troublesome,Wearisome",
+    ool:"Tool,Cool,Fool,Pool,School,Drool,Ghoul,Mule,Rule,Yule,Cruel,Dual,Fuel,Jewel,Renewal,Approval,Arrival,Denial,Removal,Retrieval,Survival,Upheaval,Bestowal,Betrayal,Concealment",
+    a:"Banana,Panda,Canada,Nirvana,Savanna,Manna,Cabana,Marijuana,Copacabana,Mariachi,Papaya,Chakra,Viagra,Yoga,Salsa,Samba,Mamba,Cobra,Aqua,Extra,Ultra,Mega,Giga,Tera,Vita,Drama,Trauma,Comma,Dogma,Pragma,Mama,Papa,Grandma,Grandpa,Baba,Dada,Lama,Llama,Pajama,Obama,Coca,Cola,Vodka,Polka,Mocha,Cha-cha,Tapioca,Focaccia,Pizza,Piazza",
+    e:"Believe,Achieve,Receive,Perceive,Deceive,Relieve,Grieve,Sleeve,Steve,Eve,Leave,Weave,Heave,Breathe,Sheathe,Wreathe,Seethe,Leash,Fleece,Geese,Peace,Piece,Niece,Priest,Beast,Feast,Least,Yeast,Creased,Deceased,Increased,Released,Teased,Pleased,Squeezed,Freezed,Breeze,Freeze,Sneeze,Cheese,Ease,Tease,Please,Disease,Displease,Appease,Seize,Sneeze,Wheeze,Squeeze",
+    i:"Happy,Lucky,Crazy,Lazy,Hazy,Daisy,Fuzzy,Buzzy,Dizzy,Busy,Easy,Cheesy,Sleazy,Breezy,Freezy,Sneezy,Wheezy,Squeezy,Greasy,Noisy,Cosy,Rosy,Posy,Pony,Tony,Bony,Stony,Irony,Harmony,Symphony,Ceremony,Testimony,Alimony,Matrimony,Patrimony,Accompany,Company,Tyranny,Ecstasy,Fantasy,Legacy,Strategy,Energy",
+    o:"Hello,Yellow,Mellow,Fellow,Bellow,Jello,Cello,Pillow,Willow,Billow,Shadow,Meadow,Narrow,Sparrow,Arrow,Barrow,Farrow,Harrow,Marrow,Tarrow,Potato,Tomato,Tornado,Avocado,Desperado,Torpedo,Speedo,Incognito,Virtuoso,Bravado,Echo,Hero,Zero,Nero,Cairo,Rio,Studio,Audio,Video,Radio",
+    u:"Blue,True,Clue,Glue,Flue,Due,Sue,Cue,Hue,Rue,Bamboo,Taboo,Tattoo,Voodoo,Hoodoo,Cuckoo,Menu,Venue,Revenue,Avenue,Continue,Value,Rescue,Issue,Tissue,Pursue,Ensue,Subdue,Undue,Imbue,Statue,Virtue,Residue,Retinue,Continuum,Forum,Premium,Curriculum,Maximum,Minimum,Medium,Tedium,Pendulum,Asylum,Museum,Opium,Helium,Lithium,Sodium,Calcium",
+    y:"Happy,Lucky,Crazy,Lazy,Hazy,Daisy,Fuzzy,Buzzy,Dizzy,Busy,Easy,Cheesy,Sleazy,Breezy,Freezy,Sneezy,Wheezy,Squeezy,Greasy,Noisy,Cosy,Rosy,Posy,Pony,Tony,Bony,Stony,Irony,Harmony,Symphony,Ceremony,Testimony,Alimony,Matrimony,Patrimony,Accompany,Company,Tyranny,Ecstasy,Fantasy,Legacy,Strategy,Energy,Only,Lonely,Lovely,Likely,Unlikely,Highly,Lowly,Slowly,Quickly,Weekly,Daily,Monthly,Yearly,Hourly",
+    default:"Testing,Coding,Running,Playing,Singing,Jumping,Flying,Smiling,Laughing,Dreaming,Thinking,Learning,Working,Walking,Talking,Listening,Reading,Writing,Driving,Swimming,Dancing,Shining,Growing,Helping,Sharing,Caring,Giving,Taking,Making,Building,Creating,Winning,Losing,Finding,Seeking,Hiding,Buying,Selling,Sending,Bringing,Holding,Moving,Turning,Starting,Stopping,Waiting,Watching,Looking,Showing,Feeling"
+};
+
+let variantStates = { variant1: true, variant2: false };
+let fontSize = 1.1;
+let currentWords = [];
+let isSpeakingAll = false;
+let audioInitialized = false;
+
+function initAudio() {
+    if (!window.speechSynthesis) {
+        alert('თქვენს მოწყობილობას არ აქვს ხმის მხარდაჭერა!');
+        return;
+    }
+    const dummy = new SpeechSynthesisUtterance('hello');
+    dummy.volume = 0.1;
+    window.speechSynthesis.speak(dummy);
+    audioInitialized = true;
+    var btn = document.getElementById('ios-fix-btn');
+    if (btn) btn.style.display = 'none';
+    var hint = document.getElementById('audio-hint');
+    if (hint) {
+        hint.textContent = '✅ ხმა ჩართულია! სიტყვაზე დაჭერით მოისმენთ';
+        hint.style.color = '#28a745';
+    }
+}
+
+function speakWord(word, liElement) {
+    if (!window.speechSynthesis) {
+        alert('თქვენს ბრაუზერს არ აქვს ხმის მხარდაჭერა!');
+        return;
+    }
+    if (!audioInitialized) {
+        try {
+            var dummy = new SpeechSynthesisUtterance('');
+            dummy.volume = 0;
+            window.speechSynthesis.speak(dummy);
+            window.speechSynthesis.cancel();
+            audioInitialized = true;
+        } catch(e) {}
+    }
+    window.speechSynthesis.cancel();
+    var utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'en-US';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    if (liElement) {
+        document.querySelectorAll('li.speaking').forEach(function(li) { li.classList.remove('speaking'); });
+        liElement.classList.add('speaking');
+        utterance.onend = function() { liElement.classList.remove('speaking'); };
+        utterance.onerror = function() { liElement.classList.remove('speaking'); };
+    }
+    window.speechSynthesis.speak(utterance);
+}
+
+function speakAllWords() {
+    if (!window.speechSynthesis) return;
+    if (isSpeakingAll) {
+        window.speechSynthesis.cancel();
+        isSpeakingAll = false;
+        document.getElementById('speak-all-btn').textContent = '🔊 ყველას მოსმენა';
+        document.querySelectorAll('li.speaking').forEach(function(li) { li.classList.remove('speaking'); });
+        return;
+    }
+    if (currentWords.length === 0) return;
+    isSpeakingAll = true;
+    document.getElementById('speak-all-btn').textContent = '⏹ გაჩერება';
+    var v1Items = document.getElementById('variant1').getElementsByTagName('li');
+    var i = 0;
+    function speakNext() {
+        if (!isSpeakingAll || i >= currentWords.length) {
+            isSpeakingAll = false;
+            document.getElementById('speak-all-btn').textContent = '🔊 ყველას მოსმენა';
+            return;
+        }
+        var word = currentWords[i];
+        var li = v1Items[i];
+        document.querySelectorAll('li.speaking').forEach(function(l) { l.classList.remove('speaking'); });
+        li.classList.add('speaking');
+        li.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US';
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utterance.onend = function() {
+            li.classList.remove('speaking');
+            i++;
+            if (isSpeakingAll && i < currentWords.length) {
+                setTimeout(speakNext, 300);
+            } else {
+                isSpeakingAll = false;
+                document.getElementById('speak-all-btn').textContent = '🔊 ყველას მოსმენა';
+            }
+        };
+        utterance.onerror = function() {
+            li.classList.remove('speaking');
+            i++;
+            if (isSpeakingAll && i < currentWords.length) {
+                setTimeout(speakNext, 300);
+            } else {
+                isSpeakingAll = false;
+                document.getElementById('speak-all-btn').textContent = '🔊 ყველას მოსმენა';
+            }
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+    speakNext();
+}
+
+function englishToGeorgianPhonetic(word) {
+    var lowerWord = word.toLowerCase();
+    var result = '';
+    var i = 0;
+    while (i < lowerWord.length) {
+        var char = lowerWord[i];
+        var nextChar = lowerWord[i + 1] || '';
+        var twoChars = char + nextChar;
+        if (twoChars === 'th') { result += 'თ'; i += 2; continue; }
+        if (twoChars === 'sh') { result += 'შ'; i += 2; continue; }
+        if (twoChars === 'ch') { result += 'ჩ'; i += 2; continue; }
+        if (twoChars === 'ph') { result += 'ფ'; i += 2; continue; }
+        if (twoChars === 'gh') { result += 'გ'; i += 2; continue; }
+        if (twoChars === 'ck') { result += 'კ'; i += 2; continue; }
+        if (twoChars === 'qu') { result += 'ქვ'; i += 2; continue; }
+        if (twoChars === 'wh') { result += 'უ'; i += 2; continue; }
+        if (twoChars === 'wr') { result += 'რ'; i += 2; continue; }
+        if (twoChars === 'kn') { result += 'ნ'; i += 2; continue; }
+        if (twoChars === 'gn') { result += 'ნ'; i += 2; continue; }
+        if (twoChars === 'ng') { result += 'ნგ'; i += 2; continue; }
+        if (twoChars === 'ai') { result += 'ეი'; i += 2; continue; }
+        if (twoChars === 'ay') { result += 'ეი'; i += 2; continue; }
+        if (twoChars === 'ea') { result += 'ი'; i += 2; continue; }
+        if (twoChars === 'ee') { result += 'ი'; i += 2; continue; }
+        if (twoChars === 'oo') { result += 'უ'; i += 2; continue; }
+        if (twoChars === 'ou') { result += 'აუ'; i += 2; continue; }
+        if (twoChars === 'ow') { result += 'აუ'; i += 2; continue; }
+        if (twoChars === 'oi') { result += 'ოი'; i += 2; continue; }
+        if (twoChars === 'oy') { result += 'ოი'; i += 2; continue; }
+        if (twoChars === 'au') { result += 'ო'; i += 2; continue; }
+        if (twoChars === 'aw') { result += 'ო'; i += 2; continue; }
+        if (twoChars === 'er') { result += 'ერ'; i += 2; continue; }
+        if (twoChars === 'ir') { result += 'ირ'; i += 2; continue; }
+        if (twoChars === 'ur') { result += 'ირ'; i += 2; continue; }
+        if (twoChars === 'ar') { result += 'არი'; i += 2; continue; }
+        if (twoChars === 'or') { result += 'ორი'; i += 2; continue; }
+        if (twoChars === 'ie') { result += 'აი'; i += 2; continue; }
+        if (twoChars === 'ei') { result += 'აი'; i += 2; continue; }
+        if (twoChars === 'ey') { result += 'აი'; i += 2; continue; }
+        if (twoChars === 'igh') { result += 'აი'; i += 3; continue; }
+        if (twoChars === 'tion') { result += 'შენ'; i += 4; continue; }
+        if (twoChars === 'sion') { result += 'ჟენ'; i += 4; continue; }
+        switch(char) {
+            case 'a': result += 'ა'; break;
+            case 'b': result += 'ბ'; break;
+            case 'c': result += (nextChar === 'e' || nextChar === 'i' || nextChar === 'y') ? 'ს' : 'კ'; break;
+            case 'd': result += 'დ'; break;
+            case 'e': result += 'ე'; break;
+            case 'f': result += 'ფ'; break;
+            case 'g': result += (nextChar === 'e' || nextChar === 'i' || nextChar === 'y') ? 'ჯ' : 'გ'; break;
+            case 'h': result += 'ჰ'; break;
+            case 'i': result += 'ი'; break;
+            case 'j': result += 'ჯ'; break;
+            case 'k': result += 'კ'; break;
+            case 'l': result += 'ლ'; break;
+            case 'm': result += 'მ'; break;
+            case 'n': result += 'ნ'; break;
+            case 'o': result += 'ო'; break;
+            case 'p': result += 'პ'; break;
+            case 'q': result += 'ქ'; break;
+            case 'r': result += 'რ'; break;
+            case 's': result += 'ს'; break;
+            case 't': result += 'ტ'; break;
+            case 'u': result += 'უ'; break;
+            case 'v': result += 'ვ'; break;
+            case 'w': result += 'უ'; break;
+            case 'x': result += 'ქს'; break;
+            case 'y': result += 'ი'; break;
+            case 'z': result += 'ზ'; break;
+            default: result += char; break;
+        }
+        i++;
+    }
+    return result;
+}
+
+function generateAutoRhymes(ending) {
+    var prefixes = ["B","C","D","F","G","H","J","K","L","M","N","P","R","S","T","V","W","Z","Bl","Br","Cl","Cr","Dr","Fl","Fr","Gl","Gr","Pl","Pr","Sc","Sh","Sk","Sl","Sm","Sn","Sp","St","Sw","Th","Tr","Tw","Wh","Wr","Ch","Ph","Qu","Sch","Scr","Shr","Spl","Spr","Squ","Str","Thr"];
+    var rhymes = [];
+    for (var i = 0; i < prefixes.length; i++) {
+        var word = prefixes[i] + ending;
+        if (word.length > 2) rhymes.push(word);
+    }
+    var verbPrefixes = ["Re","Be","De","Pre","Over","Under","Out","Up","Down","Mis","Dis","Un","In","En","Em","Sub","Super","Inter","Trans","Counter","Anti","Pro","Auto","Co","Ex","Extra","Hyper","Macro","Mega","Micro","Mini","Mono","Multi","Neo","Non","Omni","Para","Poly","Pseudo","Retro","Semi","Socio","Tele","Ultra","Uni","Bio","Geo","Photo","Radio","Video","Audio","Cyber","Eco","Euro","Giga","Nano","Tera"];
+    for (var i = 0; i < verbPrefixes.length; i++) {
+        var word = verbPrefixes[i] + ending;
+        if (word.length > 3) rhymes.push(word);
+    }
+    return rhymes;
+}
+
+function findRhymeKey(input) {
+    var lowerInput = input.toLowerCase().trim();
+    if (rhymeDB[lowerInput]) return { key: lowerInput, auto: false };
+    for (var len = 5; len >= 1; len--) {
+        if (lowerInput.length >= len) {
+            var ending = lowerInput.slice(-len);
+            if (rhymeDB[ending]) return { key: ending, auto: false };
+        }
+    }
+    var autoEnding = lowerInput.length >= 3 ? lowerInput.slice(-3) : lowerInput.slice(-1);
+    return { key: autoEnding, auto: true };
+}
+
+function changeFontSize(delta) {
+    fontSize += delta;
+    if (fontSize < 0.5) fontSize = 0.5;
+    if (fontSize > 3.0) fontSize = 3.0;
+    document.getElementById('font-size-display').textContent = fontSize.toFixed(1);
+    updateFontSize('variant1');
+    updateFontSize('variant2');
+}
+
+function updateFontSize(variantId) {
+    var list = document.getElementById(variantId);
+    if (!list) return;
+    var items = list.getElementsByTagName('li');
+    for (var i = 0; i < items.length; i++) {
+        items[i].style.fontSize = fontSize + 'em';
+        if (variantId === 'variant1') {
+            var phoneticWords = items[i].getElementsByClassName('georgian-phonetic');
+            for (var j = 0; j < phoneticWords.length; j++) {
+                phoneticWords[j].style.fontSize = (fontSize * 0.8) + 'em';
+            }
+        }
+    }
+}
+
+function toggleVariant(variantId) {
+    variantStates[variantId] = !variantStates[variantId];
+    var header = document.querySelector('#' + variantId + '-section .variant-header');
+    var content = document.getElementById(variantId + '-content');
+    var icon = document.getElementById(variantId + '-icon');
+    if (variantStates[variantId]) {
+        header.classList.add('active');
+        content.classList.remove('collapsed');
+        icon.classList.remove('collapsed');
+        icon.textContent = '▼';
+    } else {
+        header.classList.remove('active');
+        content.classList.add('collapsed');
+        icon.classList.add('collapsed');
+        icon.textContent = '▶';
+    }
+}
+
+function generateWords() {
+    var input = document.getElementById('wordInput').value.trim();
+    var v1List = document.getElementById('variant1');
+    var v2List = document.getElementById('variant2');
+    var endingInfo = document.getElementById('ending-info');
+    var speakAllBtn = document.getElementById('speak-all-btn');
+
+    v1List.innerHTML = '';
+    v2List.innerHTML = '';
+    currentWords = [];
+    isSpeakingAll = false;
+    speakAllBtn.textContent = '🔊 ყველას მოსმენა';
+    speakAllBtn.disabled = true;
+
+    if(!input) {
+        alert('გთხოვთ ჩაწეროთ სიტყვა!');
+        return;
+    }
+
+    var result = findRhymeKey(input);
+    var words = [];
+
+    if (result.auto) {
+        words = generateAutoRhymes(result.key);
+        endingInfo.style.display = 'block';
+        endingInfo.textContent = 'ავტომატური რითმები დაბოლოებით: -' + result.key;
+    } else {
+        words = rhymeDB[result.key].split(',');
+        endingInfo.style.display = 'block';
+        endingInfo.textContent = 'რითმები დაბოლოებით: -' + result.key + ' (' + words.length + ' სიტყვა)';
+    }
+
+    if (words.length < 50) {
+        var defaults = rhymeDB['default'].split(',');
+        while (words.length < 50) {
+            words.push(defaults[words.length % defaults.length]);
+        }
+    }
+
+    currentWords = words.slice(0, 50);
+
+    for (var i = 0; i < 50; i++) {
+        var englishWord = words[i];
+
+        var li1 = document.createElement('li');
+        var georgianPhonetic = englishToGeorgianPhonetic(englishWord);
+        li1.innerHTML = '<span class="speaker-icon">🔊</span>' + englishWord + '<span class="georgian-phonetic">' + georgianPhonetic + '</span>';
+        li1.style.fontSize = fontSize + 'em';
+        li1.title = 'დააჭირეთ მოსასმენად';
+        var phoneticSpan = li1.querySelector('.georgian-phonetic');
+        if (phoneticSpan) {
+            phoneticSpan.style.fontSize = (fontSize * 0.8) + 'em';
+        }
+        li1.onclick = (function(word) {
+            return function() { speakWord(word, this); };
+        })(englishWord);
+        v1List.appendChild(li1);
+
+        var li2 = document.createElement('li');
+        li2.innerHTML = '<span class="speaker-icon">🔊</span>' + englishWord;
+        li2.style.fontSize = fontSize + 'em';
+        li2.title = 'დააჭირეთ მოსასმენად';
+        li2.onclick = (function(word) {
+            return function() { speakWord(word, this); };
+        })(englishWord);
+        v2List.appendChild(li2);
+    }
+
+    speakAllBtn.disabled = false;
+
+    if (!variantStates.variant1) toggleVariant('variant1');
+    if (!variantStates.variant2) toggleVariant('variant2');
+}
+</script>
+</body>
+</html>
