@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Piper ხმები — Natia (KA) / Irina (RU)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b1420; --bg-2:#0f1e2e; --panel:#142639; --panel-2:#1b3247; --line:#24425c;
+    --amber:#ffb703; --amber-dim:#8a6a1f; --blue:#4cc9f0; --text:#eaf1f7; --text-dim:#7f97ab;
+    --danger:#ef476f; --success:#06d6a0; --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{
+    font-family:'Noto Sans Georgian', sans-serif; color:var(--text);
+    display:flex; flex-direction:column; min-height:100vh;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(76,201,240,0.06), transparent 40%),
+      radial-gradient(circle at 80% 100%, rgba(255,183,3,0.05), transparent 40%),
+      var(--bg);
+  }
+  .mono{font-family:'JetBrains Mono', monospace;}
+  header.tower{
+    display:flex; align-items:center; justify-content:space-between; padding:12px 16px;
+    background:linear-gradient(180deg, var(--bg-2), var(--bg)); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  header.tower .title{font-weight:900; font-size:16px;}
+  header.tower .tag{
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:1px; color:var(--amber);
+    border:1px solid var(--amber-dim); border-radius:6px; padding:3px 7px; text-transform:uppercase;
+  }
+  main{flex:1; padding:16px 14px 40px; max-width:640px; margin:0 auto; width:100%;}
+  h2.section-title{font-size:18px; font-weight:900; margin:0 0 4px 0;}
+  p.hint{color:var(--text-dim); font-size:13.5px; margin:0 0 14px 0; line-height:1.55;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:14px;}
+  .notice{
+    background:rgba(255,183,3,0.08); border:1px solid var(--amber-dim); border-radius:var(--radius);
+    padding:14px; margin-bottom:16px; font-size:13.5px; line-height:1.6;
+  }
+  .notice b{color:var(--amber);}
+  .runway-divider{display:flex; align-items:center; gap:5px; margin:16px 0;}
+  .runway-divider .seg{flex:1; height:1px; background:repeating-linear-gradient(90deg, var(--amber-dim) 0 6px, transparent 6px 12px);}
+  .runway-divider span{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-dim); letter-spacing:2px; white-space:nowrap;}
+  label.field-label{display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:6px; font-family:'JetBrains Mono',monospace; letter-spacing:0.5px;}
+  textarea, select{
+    width:100%; background:var(--bg-2); color:var(--text); border:1px solid var(--line);
+    border-radius:10px; padding:11px 12px; font-size:15px; font-family:inherit; resize:vertical;
+  }
+  textarea{height:110px;}
+  textarea:focus, select:focus{outline:none; border-color:var(--amber);}
+  button{
+    font-family:'Noto Sans Georgian', sans-serif; font-weight:700; font-size:15px;
+    border:none; border-radius:10px; padding:12px 16px; cursor:pointer;
+    transition:transform .08s ease, filter .15s ease;
+  }
+  button:active{transform:scale(0.97);}
+  button:disabled{opacity:0.5; cursor:default; transform:none;}
+  .btn-primary{background:var(--amber); color:#1a1200;}
+  .btn-secondary{background:var(--panel-2); color:var(--text); border:1px solid var(--line);}
+  .btn-danger{background:transparent; color:var(--danger); border:1px solid var(--danger);}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn-row button{flex:1; min-width:120px;}
+  .voice-pick{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
+  .voice-pick button{
+    background:var(--bg-2); border:1px solid var(--line); color:var(--text-dim);
+    padding:14px 10px; text-align:left; border-radius:12px;
+  }
+  .voice-pick button .flag{font-size:20px; display:block; margin-bottom:4px;}
+  .voice-pick button .vname{font-weight:900; color:var(--text); font-size:14.5px;}
+  .voice-pick button .vnote{font-size:11.5px; margin-top:2px; display:block;}
+  .voice-pick button.active{border-color:var(--amber); background:rgba(255,183,3,0.08); color:var(--text);}
+  .speed-row{display:flex; gap:8px; margin-bottom:12px;}
+  .speed-row button{flex:1; background:var(--bg-2); border:1px solid var(--line); color:var(--text-dim); padding:9px; font-size:13px; border-radius:10px;}
+  .speed-row button.active{border-color:var(--blue); color:var(--blue); background:rgba(76,201,240,0.1);}
+  .status-box{
+    background:var(--bg-2); border:1px solid var(--line); border-radius:10px; padding:12px;
+    font-size:13.5px; line-height:1.6; white-space:pre-wrap; word-break:break-word; min-height:20px;
+    font-family:'JetBrains Mono',monospace; color:var(--text-dim);
+  }
+  .progress-wrap{height:8px; background:var(--bg-2); border-radius:6px; overflow:hidden; margin-top:10px; display:none;}
+  .progress-bar{height:100%; width:0%; background:var(--amber); transition:width .2s ease;}
+  .stored-tag{
+    display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    padding:2px 7px; border-radius:5px; background:rgba(6,214,160,0.12); color:var(--success); margin-left:6px;
+  }
+</style>
+</head>
+<body>
+
+<header class="tower">
+  <div class="title">🎙️ Piper ხმები</div>
+  <span class="tag">KA · RU</span>
+</header>
+
+<main>
+
+  <div class="notice">
+    <b>მნიშვნელოვანი, სანამ დაიწყებ:</b><br>
+    1) ეს გვერდი მუშაობს <b>მხოლოდ</b> ონლაინ (https) — ატვირთე GitHub Pages-ზე, როგორც შენი დანარჩენი აპები. ტელეფონზე ლოკალური ფაილიდან გახსნისას (<span class="mono">content://</span> ან <span class="mono">file://</span>) ბრაუზერი ბლოკავს ინტერნეტიდან მოდელის ჩამოტვირთვას და ვერ იმუშავებს.<br>
+    2) ხმის მოდელი დიდია (~60–70 MB) — პირველად ჩამოტვირთვა Wi-Fi-ზე გააკეთე. მერე ტელეფონში ინახება (OPFS) და აღარ იტვირთება თავიდან.<br>
+    3) რუსულისთვის უფასო მდედრობითი (გოგოს) ხმა Piper-ში მხოლოდ <b>ერთია — Irina</b>. სხვა უფასო ალტერნატივა არ არსებობს, ამიტომ სამი სისწრაფის ვარიანტი გავაკეთე იმავე ხმაზე (ნელი/ჩვეულებრივი/სწრაფი), რომ მოქნილობა მაინც გქონდეს.
+  </div>
+
+  <h2 class="section-title">1. აირჩიე ხმა</h2>
+  <p class="hint">ორივე ხმა Piper-ის უფასო, ღია წყაროს პროექტიდანაა (rhasspy/piper-voices).</p>
+  <div class="voice-pick">
+    <button id="pickKa" class="active" onclick="selectVoice('ka')">
+      <span class="flag">🇬🇪</span>
+      <span class="vname">Natia</span>
+      <span class="vnote mono">ka_GE — medium</span>
+    </button>
+    <button id="pickRu" onclick="selectVoice('ru')">
+      <span class="flag">🇷🇺</span>
+      <span class="vname">Irina</span>
+      <span class="vnote mono">ru_RU — medium, ქალი</span>
+    </button>
+  </div>
+
+  <div id="speedWrap" style="display:none;">
+    <label class="field-label">სისწრაფე (Irina-ს ვარიანტები)</label>
+    <div class="speed-row">
+      <button id="speedSlow" onclick="selectSpeed(0.85)">🐢 ნელი</button>
+      <button id="speedNormal" class="active" onclick="selectSpeed(1.0)">▶️ ჩვეულებრივი</button>
+      <button id="speedFast" onclick="selectSpeed(1.2)">⚡ სწრაფი</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="downloadCurrentVoice()">⬇️ მოდელის ჩამოტვირთვა <span id="storedTagWrap"></span></button>
+      <button class="btn-danger" onclick="clearCache()">🗑️ ქეშის გასუფთავება</button>
+    </div>
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <div class="runway-divider"><span>ტექსტი</span><div class="seg"></div></div>
+  <div class="card">
+    <label class="field-label">რა წავახმოვანოთ</label>
+    <textarea id="ttsText">გამარჯობა, ეს არის ტესტი Piper ხმის სინთეზისთვის.</textarea>
+    <div style="height:10px;"></div>
+    <button class="btn-primary" style="width:100%;" id="speakBtn" onclick="speakNow()">🔊 გახმოვანება</button>
+  </div>
+
+  <div class="runway-divider"><span>სტატუსი</span><div class="seg"></div></div>
+  <div class="card"><div class="status-box" id="statusBox">მზადაა. აირჩიე ხმა და დააჭირე „გახმოვანება" — თუ მოდელი არ არის ჩამოტვირთული, ავტომატურად ჩამოიტვირთება.</div></div>
+
+</main>
+
+<script type="importmap">
+{
+  "imports": {
+    "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/esm/ort.min.js"
+  }
+}
+</script>
+<script type="module">
+import * as tts from 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.4/dist/piper-tts-web.js';
+
+const VOICES = {
+  ka: { id: 'ka_GE-natia-medium', label: 'Natia (ka_GE)' },
+  ru: { id: 'ru_RU-irina-medium', label: 'Irina (ru_RU)' }
+};
+
+let currentLang = 'ka';
+let currentSpeed = 1.0;
+let busy = false;
+
+const statusBox = document.getElementById('statusBox');
+const progressWrap = document.getElementById('progressWrap');
+const progressBar = document.getElementById('progressBar');
+const storedTagWrap = document.getElementById('storedTagWrap');
+
+function log(msg){
+  statusBox.textContent = msg;
+}
+
+window.selectVoice = function(lang){
+  currentLang = lang;
+  document.getElementById('pickKa').classList.toggle('active', lang === 'ka');
+  document.getElementById('pickRu').classList.toggle('active', lang === 'ru');
+  document.getElementById('speedWrap').style.display = (lang === 'ru') ? 'block' : 'none';
+  refreshStoredTag();
+};
+
+window.selectSpeed = function(rate){
+  currentSpeed = rate;
+  document.getElementById('speedSlow').classList.toggle('active', rate === 0.85);
+  document.getElementById('speedNormal').classList.toggle('active', rate === 1.0);
+  document.getElementById('speedFast').classList.toggle('active', rate === 1.2);
+};
+
+async function refreshStoredTag(){
+  try{
+    const stored = await tts.stored();
+    const isStored = stored.includes(VOICES[currentLang].id);
+    storedTagWrap.innerHTML = isStored ? '<span class="stored-tag">✓ ჩამოტვირთულია</span>' : '';
+  }catch(e){ storedTagWrap.innerHTML = ''; }
+}
+
+function onProgress(progress){
+  if(!progress || !progress.total) return;
+  const pct = Math.round((progress.loaded * 100) / progress.total);
+  progressWrap.style.display = 'block';
+  progressBar.style.width = pct + '%';
+  log(`⏳ ჩამოიტვირთება: ${VOICES[currentLang].label}\n${pct}%  (${(progress.loaded/1048576).toFixed(1)} MB / ${(progress.total/1048576).toFixed(1)} MB)`);
+}
+
+window.downloadCurrentVoice = async function(){
+  if(busy) return;
+  busy = true;
+  const voiceId = VOICES[currentLang].id;
+  try{
+    log('⏳ იწყება ჩამოტვირთვა: ' + VOICES[currentLang].label + ' ...');
+    await tts.download(voiceId, onProgress);
+    progressWrap.style.display = 'none';
+    log('✅ მოდელი მზადაა: ' + VOICES[currentLang].label);
+    refreshStoredTag();
+  }catch(e){
+    progressWrap.style.display = 'none';
+    log('❌ ჩამოტვირთვის შეცდომა: ' + e.message + '\n\n(დარწმუნდი რომ გვერდი გახსნილია https-ზე, არა ლოკალური ფაილიდან)');
+  }finally{
+    busy = false;
+  }
+};
+
+window.clearCache = async function(){
+  if(busy) return;
+  try{
+    await tts.flush();
+    log('🗑️ ქეში გასუფთავებულია.');
+    refreshStoredTag();
+  }catch(e){
+    log('❌ ვერ გასუფთავდა: ' + e.message);
+  }
+};
+
+window.speakNow = async function(){
+  if(busy) return;
+  const text = document.getElementById('ttsText').value.trim();
+  if(!text){ log('⚠️ ჩაწერე ტექსტი.'); return; }
+  busy = true;
+  const btn = document.getElementById('speakBtn');
+  btn.disabled = true;
+  const voiceId = VOICES[currentLang].id;
+  try{
+    log('⏳ სინთეზირდება (' + VOICES[currentLang].label + ')...');
+    const wav = await tts.predict({ text, voiceId }, onProgress);
+    progressWrap.style.display = 'none';
+    const audio = new Audio();
+    audio.src = URL.createObjectURL(wav);
+    audio.playbackRate = currentLang === 'ru' ? currentSpeed : 1.0;
+    audio.preservesPitch = true;
+    await audio.play();
+    log('✅ დაიწყო დაკვრა (' + VOICES[currentLang].label + (currentLang==='ru' ? `, სისწრაფე ${currentSpeed}x` : '') + ')');
+    audio.onended = () => URL.revokeObjectURL(audio.src);
+    refreshStoredTag();
+  }catch(e){
+    progressWrap.style.display = 'none';
+    log('❌ სინთეზის შეცდომა: ' + e.message + '\n\n(დარწმუნდი რომ ინტერნეტთან კავშირი გაქვს პირველი ჩამოტვირთვისთვის, და გვერდი https-ზეა)');
+  }finally{
+    btn.disabled = false;
+    busy = false;
+  }
+};
+
+refreshStoredTag();
+</script>
+
+</body>
+</html>
